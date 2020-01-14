@@ -1,0 +1,12 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+    - "8080:8080"
+    volumes:
+      - ./target/dockerized.war:/opt/tomcat/webapps/dockerized.war
+  kms:
+    image: nsmithuk/local-kms
+    ports:
+      - "8001:8080"
