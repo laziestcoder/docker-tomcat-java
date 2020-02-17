@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: java7-glassfish4
+    image: java7-glassfish3
     ports:
       - 4848:4848
       - 8080:8080
