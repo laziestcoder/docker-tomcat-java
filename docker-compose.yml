@@ -1,12 +1,13 @@
 version: '3'
 services:
-  web:
-    build: .
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: java7-glassfish4
     ports:
-    - "8080:8080"
-    volumes:
-      - ./target/dockerized.war:/opt/tomcat/webapps/dockerized.war
-  kms:
-    image: nsmithuk/local-kms
-    ports:
-      - "8001:8080"
+      - 4848:4848
+      - 8080:8080
+      - 8181:8181
+#    volumes:
+#      - ./target/dockerized.war:/opt/glassfish/webapps/dockerized.war

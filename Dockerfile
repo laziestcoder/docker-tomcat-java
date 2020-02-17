@@ -1,62 +1,46 @@
-#FROM tomcat:8.5-centos
-#
-#ADD ./target/dockerized.war /usr/local/tomcat/webapps/
-#
-#EXPOSE 8080
-#
-#CMD ["catalina.sh", "run"]
-#
-#FROM centos:centos7
-#
-#RUN yum install -y tomcat tomcat-webapps tomcat-admin-webapps tomcat-javadocs tomcat-docs-webapps
-#
-##EXPOSE 8080
-#
-#ENTRYPOINT ["ping"]
-#CMD ["google.com"]
-#FROM davidcaste/alpine-tomcat:tomcat8
-#
-#COPY ./target/dockerized.war /opt/tomcat/webapps/
-# Centos based container with Java and Tomcat
-FROM centos:centos7
+# JDK 7
+# GlassFish
+FROM        java:7-jdk
 
-# Install prepare infrastructure
-RUN yum -y update && \
- yum -y install wget && \
- yum -y install tar
+ENV         JAVA_HOME         /usr/lib/jvm/java-7-openjdk-amd64
+ENV         GLASSFISH_HOME    /usr/local/glassfish3
+ENV         PATH              $PATH:$JAVA_HOME/bin:$GLASSFISH_HOME/bin
 
-# Prepare environment
-ENV JAVA_HOME /usr/java/latest
-ENV CATALINA_HOME /opt/tomcat
-ENV PATH $PATH:$JAVA_HOME/bin:$CATALINA_HOME/bin:$CATALINA_HOME/scripts
+RUN         apt-get update && \
+            apt-get install -y curl unzip zip inotify-tools && \
+            rm -rf /var/lib/apt/lists/*
 
-# Install Oracle Java8
-ENV JAVA_VERSION 11.0.5
-ENV JAVA_BUILD 11.0.5+10
-ENV JAVA_DL_HASH e51269e04165492b90fa15af5b4eb1a5
+RUN         curl -L -o /tmp/glassfish-3.1.2.2.zip http://download.java.net/glassfish/3.1.2.2/release/glassfish-3.1.2.2.zip && \
+            unzip /tmp/glassfish-3.1.2.2.zip -d /usr/local && \
+            rm -f /tmp/glassfish-3.1.2.2.zip
 
-RUN wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" \
- https://download.oracle.com/otn-pub/java/jdk/${JAVA_BUILD}/${JAVA_DL_HASH}/jdk-${JAVA_VERSION}_linux-x64_bin.rpm && \
- yum -y localinstall jdk*
+RUN         echo "AS_JAVA=\"$JAVA_HOME\"" >> \
+            /usr/local/glassfish3/glassfish/config/asenv.conf
+
+# Copy the war,ear files to autodeploy directory
+COPY        build-artifect/* /usr/local/glassfish3/glassfish/domains/domain1/autodeploy/
+
+# Copy the realm files to autodeploy directory
+COPY        realm/* /usr/local/glassfish3/glassfish/lib/
+
+# Copy the resource files to autodeploy directory
+COPY        resources/resource.xml /usr/local/glassfish3/glassfish/domains/domain1/config/resource.xml
 
 
-# Install Tomcat
-ENV TOMCAT_MAJOR 8
-ENV TOMCAT_VERSION 8.5.50
+# Copy the script file to workdir
+COPY        asadminCommands.sh /usr/local/glassfish3/
 
-RUN wget http://mirror.linux-ia64.org/apache/tomcat/tomcat-${TOMCAT_MAJOR}/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz && \
- tar -xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz && \
- rm apache-tomcat*.tar.gz && \
- mv apache-tomcat* ${CATALINA_HOME}
+RUN         chmod 777 /usr/local/glassfish3/asadminCommands.sh
 
-RUN chmod +x ${CATALINA_HOME}/bin/*sh
+EXPOSE      4848 8080 8181
 
-WORKDIR /opt/tomcat
+WORKDIR     /usr/local/glassfish3
 
-COPY tomcat-users.xml /opt/tomcat/conf/
-COPY context.xml /opt/tomcat/webapps/manager/META-INF/
+# Replacing the password for user 'admin' as 'admin'
+RUN         echo "admin;{SSHA256}cY8Kee5Epjurpz5t33ndtes9jdSuRnCfbYrRXsXCu92Myl8+OVfgxQ==;asadmin" > \
+            /usr/local/glassfish3/glassfish/domains/domain1/config/admin-keyfile
 
-CMD ["catalina.sh", "start"]
+# verbose causes the process to remain in the foreground so that docker can track it
+CMD         asadmin start-domain -v
 
-ENTRYPOINT ["ping"]
-CMD ["google.com"]
+RUN         ./asadminCommands.sh

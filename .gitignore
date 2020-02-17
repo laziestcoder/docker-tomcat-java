@@ -1,1 +1,9 @@
 *.idea
+build-artifect/*
+!build-artifect/README.md
+!realm/README.md
+realm/*
+*.war
+*.jar
+*.ear
+*.ejb
