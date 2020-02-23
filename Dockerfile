@@ -30,6 +30,9 @@ COPY        resources/resource.xml /usr/local/glassfish3/glassfish/domains/domai
 # Copy the script file to workdir
 COPY        asadminCommands.sh /usr/local/glassfish3/
 
+# Copy LIB files
+COPY        lib/ojdbc6.jar /usr/local/glassfish3/glassfish/lib
+
 RUN         chmod 777 /usr/local/glassfish3/asadminCommands.sh
 
 EXPOSE      4848 8080 8181
