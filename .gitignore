@@ -7,3 +7,4 @@ realm/*
 *.jar
 *.ear
 *.ejb
+!lib/ojdbc6.jar
